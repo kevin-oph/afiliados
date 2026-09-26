@@ -1,13 +1,13 @@
 import React, { useState, useMemo } from 'react';
-import { Award, Search, Download } from 'lucide-react';
+import { Award, Search, Download, Eye } from 'lucide-react';
 
-export default function LideresTable({ data }) {
+export default function LideresTable({ data, onSelectLider }) {
   const [searchTerm, setSearchTerm] = useState('');
 
   const lideresConsolidados = useMemo(() => {
     const counts = {};
     data.forEach(item => {
-      const lider = item.LIDER || item.lider || 'SIN LIDER';
+      const lider = item.LIDER || item.lider || 'SIN LIDÉR';
       const cleanLider = String(lider).trim().toUpperCase();
       counts[cleanLider] = (counts[cleanLider] || 0) + 1;
     });
@@ -43,7 +43,7 @@ export default function LideresTable({ data }) {
         <div>
           <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
             <Award size={18} className="text-emerald-600" />
-            Consolidado General de Estructura por Líder
+            Consolidado General de Estructura por Líder (Haz clic en un líder para ver su ficha)
           </h3>
           <p className="text-xs text-gray-500">Total de {lideresConsolidados.length} líderes evaluados en el padrón</p>
         </div>
@@ -79,22 +79,32 @@ export default function LideresTable({ data }) {
               <th className="py-2.5 px-4">#</th>
               <th className="py-2.5 px-4">Nombre del Líder</th>
               <th className="py-2.5 px-4 text-right">Volumen Asignado / Capturado</th>
+              <th className="py-2.5 px-4 text-center">Acción</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 text-xs">
             {filteredLideres.length > 0 ? (
               filteredLideres.map((item, idx) => (
-                <tr key={idx} className="hover:bg-gray-50/80 transition">
+                <tr 
+                  key={idx} 
+                  onClick={() => onSelectLider(item.lider)}
+                  className="hover:bg-emerald-50/60 cursor-pointer transition group"
+                >
                   <td className="py-2.5 px-4 text-gray-400 font-medium">{idx + 1}</td>
-                  <td className="py-2.5 px-4 text-gray-800 font-medium">{item.lider}</td>
+                  <td className="py-2.5 px-4 text-gray-800 font-bold group-hover:text-emerald-800">{item.lider}</td>
                   <td className="py-2.5 px-4 text-right font-bold text-emerald-700">
                     {item.cantidad.toLocaleString()} <span className="text-[10px] font-normal text-gray-500">registros</span>
+                  </td>
+                  <td className="py-2.5 px-4 text-center">
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 group-hover:bg-emerald-600 group-hover:text-white px-2.5 py-1 rounded-lg transition">
+                      <Eye size={13} /> Ver Ficha
+                    </span>
                   </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan="3" className="py-6 text-center text-gray-400 text-xs">
+                <td colSpan="4" className="py-6 text-center text-gray-400 text-xs">
                   No se encontró ningún líder con ese nombre.
                 </td>
               </tr>

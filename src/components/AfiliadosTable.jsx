@@ -14,19 +14,35 @@ export default function AfiliadosTable({ data, searchTerm, setSearchTerm }) {
     return () => clearTimeout(handler);
   }, [searchTerm]);
 
+  // Depurar duplicados exactos (mismo nombre + mismo líder + misma colonia)
+  const uniqueData = useMemo(() => {
+    const seen = new Set();
+    return data.filter(item => {
+      const nombre = String(item.NOMBRE || '').trim().toUpperCase();
+      const lider = String(item.LIDER || '').trim().toUpperCase();
+      const colonia = String(item.COLONIA || item.colonia || '').trim().toUpperCase();
+      
+      const key = `${nombre}_${lider}_${colonia}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [data]);
+
   const filteredAfiliados = useMemo(() => {
     const query = debouncedSearch.toLowerCase().trim();
-    if (!query) return data;
+    if (!query) return uniqueData;
 
-    return data.filter(item => {
+    return uniqueData.filter(item => {
       const nombre = String(item.NOMBRE || '').toLowerCase();
       const telefono = String(item.NUMERO_DE_TEL || item['NUMERO DE TEL'] || '').toLowerCase();
       const seccion = String(item.SECCION || '').toLowerCase();
       const lider = String(item.LIDER || '').toLowerCase();
+      const colonia = String(item.COLONIA || item.colonia || '').toLowerCase();
 
-      return nombre.includes(query) || telefono.includes(query) || seccion.includes(query) || lider.includes(query);
+      return nombre.includes(query) || telefono.includes(query) || seccion.includes(query) || lider.includes(query) || colonia.includes(query);
     });
-  }, [data, debouncedSearch]);
+  }, [uniqueData, debouncedSearch]);
 
   const totalPages = Math.ceil(filteredAfiliados.length / pageSize) || 1;
   const paginatedData = useMemo(() => {
@@ -35,15 +51,16 @@ export default function AfiliadosTable({ data, searchTerm, setSearchTerm }) {
   }, [filteredAfiliados, currentPage, pageSize]);
 
   const exportToExcel = () => {
-    let csvContent = "data:text/csv;charset=utf-8,NOMBRE,TELEFONO,SECCION,LIDER\n";
+    let csvContent = "data:text/csv;charset=utf-8,NOMBRE,TELEFONO,SECCION,COLONIA,LIDER\n";
     filteredAfiliados.forEach(item => {
       const tel = item.NUMERO_DE_TEL || item['NUMERO DE TEL'] || '';
-      csvContent += `"${item.NOMBRE}","${tel}","${item.SECCION}","${item.LIDER}"\n`;
+      const col = item.COLONIA || item.colonia || '';
+      csvContent += `"${item.NOMBRE}","${tel}","${item.SECCION}","${col}","${item.LIDER}"\n`;
     });
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "directorio_afiliados.csv");
+    link.setAttribute("download", "directorio_afiliados_depurado.csv");
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -55,9 +72,9 @@ export default function AfiliadosTable({ data, searchTerm, setSearchTerm }) {
         <div>
           <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
             <Users size={18} className="text-emerald-600" />
-            Directorio General de Afiliados
+            Directorio General de Afiliados (Depurado)
           </h3>
-          <p className="text-xs text-gray-500">Mostrando registros ({filteredAfiliados.length} encontrados)</p>
+          <p className="text-xs text-gray-500">Mostrando registros únicos ({filteredAfiliados.length} encontrados)</p>
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -92,6 +109,7 @@ export default function AfiliadosTable({ data, searchTerm, setSearchTerm }) {
               <th className="py-2.5 px-4">Nombre del Afiliado</th>
               <th className="py-2.5 px-4">Teléfono</th>
               <th className="py-2.5 px-4">Sección</th>
+              <th className="py-2.5 px-4">Colonia</th>
               <th className="py-2.5 px-4">Liderazgo</th>
             </tr>
           </thead>
@@ -100,6 +118,7 @@ export default function AfiliadosTable({ data, searchTerm, setSearchTerm }) {
               paginatedData.map((item, idx) => {
                 const globalIdx = (currentPage - 1) * pageSize + idx + 1;
                 const tel = item.NUMERO_DE_TEL || item['NUMERO DE TEL'] || 'NO CAPTURADO';
+                const colonia = item.COLONIA || item.colonia || 'S/N';
                 return (
                   <tr key={idx} className="hover:bg-gray-50/80 transition">
                     <td className="py-2.5 px-4 text-gray-400 font-medium">{globalIdx}</td>
@@ -110,13 +129,14 @@ export default function AfiliadosTable({ data, searchTerm, setSearchTerm }) {
                         Sección {item.SECCION}
                       </span>
                     </td>
+                    <td className="py-2.5 px-4 font-medium text-gray-700">{colonia}</td>
                     <td className="py-2.5 px-4 text-gray-700 font-medium">{item.LIDER}</td>
                   </tr>
                 );
               })
             ) : (
               <tr>
-                <td colSpan="5" className="py-8 text-center text-gray-400 text-xs">
+                <td colSpan="6" className="py-8 text-center text-gray-400 text-xs">
                   No se encontraron registros que coincidan con la búsqueda.
                 </td>
               </tr>
