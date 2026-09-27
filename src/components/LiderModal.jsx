@@ -1,11 +1,10 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { X, Award, Users, Copy, MapPin } from 'lucide-react';
 
 export default function LiderModal({ liderNombre, data, onClose }) {
-  if (!liderNombre) return null;
-
   // 1. Filtrar los afiliados de este líder y eliminar duplicados exactos (mismo nombre, líder y colonia)
   const afiliadosLider = useMemo(() => {
+    if (!data || !liderNombre) return [];
     const rawList = data.filter(item => {
       const lider = String(item.LIDER || item.lider || '').trim().toUpperCase();
       return lider === liderNombre.trim().toUpperCase();
@@ -30,6 +29,7 @@ export default function LiderModal({ liderNombre, data, onClose }) {
 
   // 3. Detectar si este líder tiene verdaderos cruces con OTROS líderes
   const duplicadosLider = useMemo(() => {
+    if (!data) return [];
     const globalNameCounts = {};
     data.forEach(item => {
       const nombre = String(item.NOMBRE || item.nombre || '').trim().toUpperCase();
@@ -41,6 +41,9 @@ export default function LiderModal({ liderNombre, data, onClose }) {
       return globalNameCounts[nombre] > 1;
     });
   }, [data, afiliadosLider]);
+
+  // Validación condicional colocada DESPUÉS de todos los hooks
+  if (!liderNombre) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
